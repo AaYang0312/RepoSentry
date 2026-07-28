@@ -1,0 +1,18 @@
+{
+  "repository_path": "/absolute/path/to/repository",
+  "pr_number": 42,
+  "changed_files": [
+    "src/auth/service.py",
+    "src/api/users.py",
+    "tests/test_auth.py",
+    "requirements.lock"
+  ],
+  "additions": 320,
+  "deletions": 90,
+  "dependency_changed": true,
+  "api_contract_changed": true,
+  "sensitive_paths": [
+    "src/auth/service.py"
+  ]
+}
+
