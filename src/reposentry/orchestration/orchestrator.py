@@ -172,12 +172,20 @@ class ReviewOrchestrator:
         route: Dict[str, Any],
         agent_key: str,
     ) -> str:
+        scope_hint = None
+        if request.has_revision_pair and request.change_set:
+            scope_hint = (
+                "Confine your review to the files in request.change_set.changed_files "
+                "and the line ranges in request.change_set.files[*].hunks. Do not flag "
+                "unchanged code unless it directly explains a change."
+            )
         return json.dumps(
             {
                 "objective": "Review repository changes with code evidence.",
                 "specialist": agent_key,
                 "request": request.to_dict(),
                 "route": route,
+                "review_scope": scope_hint,
                 "output_contract": {
                     "summary": "string",
                     "findings": [

@@ -96,10 +96,21 @@ class AnalysisRequest:
     dependency_changed: bool = False
     api_contract_changed: bool = False
     sensitive_paths: List[str] = field(default_factory=list)
+    # Phase 2: server-derived revision pair. When both are present, routing is
+    # driven by ``change_set`` and the manual risk booleans above are ignored.
+    base_revision: Optional[str] = None
+    head_revision: Optional[str] = None
+    change_set: Optional[Dict[str, Any]] = None
 
     @property
     def changed_lines(self) -> int:
         return self.additions + self.deletions
+
+    @property
+    def has_revision_pair(self) -> bool:
+        """True when routing should be grounded in a server-derived change set."""
+
+        return bool(self.base_revision and self.head_revision)
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)

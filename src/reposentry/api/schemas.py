@@ -16,6 +16,11 @@ class AnalysisCreate(BaseModel):
     dependency_changed: bool = False
     api_contract_changed: bool = False
     sensitive_paths: List[str] = Field(default_factory=list)
+    # Phase 2: optional revision pair. When both are present the server derives
+    # the change set, route score, and risk flags from Git and ignores the
+    # manual fields above for routing.
+    base_revision: Optional[str] = Field(default=None)
+    head_revision: Optional[str] = Field(default=None)
 
     def to_domain(self) -> AnalysisRequest:
         return AnalysisRequest(
@@ -27,10 +32,11 @@ class AnalysisCreate(BaseModel):
             dependency_changed=self.dependency_changed,
             api_contract_changed=self.api_contract_changed,
             sensitive_paths=self.sensitive_paths,
+            base_revision=self.base_revision,
+            head_revision=self.head_revision,
         )
 
 
 class TaskAccepted(BaseModel):
     task_id: str
     status: str
-

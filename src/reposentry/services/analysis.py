@@ -17,7 +17,9 @@ from reposentry.orchestration.orchestrator import ReviewOrchestrator
 from reposentry.runtime.agent import AgentRuntime, AgentSpec
 from reposentry.runtime.events import EventBus
 from reposentry.runtime.model import ModelClient
+from reposentry.services.revisions import RevisionService, attach_change_set
 from reposentry.settings import Settings
+from reposentry.skills.git import GitError
 from reposentry.skills.repository import RepositoryToolkit
 
 
@@ -99,6 +101,9 @@ class AnalysisService:
         job.updated_at = utc_now_iso()
         try:
             repository_root = self._resolve_repository(job.request.repository_path)
+            request = self._maybe_attach_change_set(job.request, repository_root)
+            if request is not job.request:
+                job.request = request
             toolkit = RepositoryToolkit(repository_root)
             registry = toolkit.registry()
 
@@ -124,6 +129,30 @@ class AnalysisService:
             job.error = str(exc)
         finally:
             job.updated_at = utc_now_iso()
+
+    def _maybe_attach_change_set(
+        self,
+        request: AnalysisRequest,
+        repository_root: Path,
+    ) -> AnalysisRequest:
+        """Resolve a revision pair into a change set so routing is server-derived.
+
+        If the request already carries a serialized change set (e.g. the CLI
+        parsed it), it is used as-is. Otherwise, when only the revision refs are
+        present, we compute the change set here. Returns the request unchanged
+        when no revision pair is supplied.
+        """
+
+        if not request.has_revision_pair:
+            return request
+        if request.change_set:
+            return attach_change_set(request, request.change_set)
+        change_set = RevisionService(self._settings).parse(
+            base_ref=request.base_revision,
+            head_ref=request.head_revision,
+            repository_path=str(repository_root),
+        )
+        return attach_change_set(request, change_set.to_dict())
 
     def _resolve_repository(self, requested_path: str) -> Path:
         requested = Path(requested_path).expanduser().resolve()
